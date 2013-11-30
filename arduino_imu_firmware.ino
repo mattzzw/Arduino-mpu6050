@@ -13,14 +13,17 @@
 #include <SoftwareSerial.h>
 #include <math.h>
 
-
-
-//
 #define MPU6050_I2C_ADDRESS 0x68
 
+#define FREQ  50.0 // sample freq in Hz
 
-
+// Bluetooth transmitter 
 SoftwareSerial BTSerial(2, 3); // RX | TX
+
+// global angle, gyro derived
+ double gx = 0, gy = 0, gz = 0;
+
+
 
 void setup()
 {      
@@ -28,14 +31,22 @@ void setup()
   uint8_t c;
   BTSerial.begin(38400);
 
+
   // Initialize the 'Wire' class for the I2C-bus.
   Wire.begin();
 
   // wake up
   MPU6050_write_reg (0x6b, 0);
 
-  // Low pass filter samples
-  //MPU6050_write_reg (0x1a, 6);
+  // Low pass filter samples, 1khz sample rate
+  MPU6050_write_reg (0x1a, 1);
+
+  // set sample rate
+  // sample rate FREQ = 1khz / (div + 1)
+  // 1kHz / (div + 1) = FREQ  
+  // reg_value = 1khz/FREQ - 1
+  // so write 99 to smprt_div (0x19)
+  MPU6050_write_reg (0x19, 1000/FREQ - 1);
 }
 
 
@@ -43,37 +54,61 @@ void loop()
 {
   int error;
   double dT;
-  double r, ax, ay, az;
+  double ax, ay, az;
+ 
   uint8_t i2cData[14];
   int16_t accX, accY, accZ;
+  double gyrX, gyrY, gyrZ;
 
-  
-  //error = MPU6050_read (MPU6050_ACCEL_XOUT_H, (uint8_t *) &accel_t_gyro, sizeof(accel_t_gyro));
-
-  error = MPU6050_read(0x3b, i2cData, 6);
+  // read imu data
+  error = MPU6050_read(0x3b, i2cData, 14);
   
   accX = ((i2cData[0] << 8) | i2cData[1]);
   accY = ((i2cData[2] << 8) | i2cData[3]);
   accZ = ((i2cData[4] << 8) | i2cData[5]);
-  
+
+
+  gyrX = ((i2cData[8] << 8) | i2cData[9]) / 131.0;
+  gyrY = ((i2cData[10] << 8) | i2cData[11]) / 131.0;
+  gyrZ = ((i2cData[12] << 8) | i2cData[13]) / 131.0;
+
+
 
   if(error!=0)
     BTSerial.println("ERROR!");
 
-
+// angles based on accelerometer
   ax = atan2(accX, sqrt( pow(accY, 2) + pow(accZ, 2))) * 180 / M_PI;
   ay = atan2(accY, sqrt( pow(accX, 2) + pow(accZ, 2))) * 180 / M_PI;
-/*
-  BTSerial.println(accX);
-  BTSerial.println(accY);
-  BTSerial.println(accZ);
- */
 
+// angles based on gyro (deg/s)
+  
+  gx = gx + gyrX / FREQ;
+  gy = gy + gyrY / FREQ;
+  gz = gz + gyrZ / FREQ;
+
+
+
+  BTSerial.print(gyrX);
+  BTSerial.print(", ");
+  BTSerial.print(gyrY);
+  BTSerial.print(", ");
+  BTSerial.print(gyrZ);
+  BTSerial.print(" || ");
+  
+  BTSerial.print(gx);
+  BTSerial.print(", ");
+  BTSerial.print(gy);
+  BTSerial.print(", ");
+  BTSerial.print(gz);
+  BTSerial.write("     \r");
+
+/*
   BTSerial.print(ax, 2);
   BTSerial.print(", ");
   BTSerial.println(ay, 2);
-
-  delay(100);
+*/
+  delay((1/FREQ) * 1000);
 }
 
 
