@@ -10,7 +10,7 @@ import serial
 
 ser = serial.Serial('/dev/tty.ArduinoBluetooth-DevB', 38400, timeout=1)
 ser.flushInput()
-ax = ay = 0.0
+ax = ay = az = 0.0
 
 def resize((width, height)):
     if height==0:
@@ -37,8 +37,8 @@ def draw():
     glLoadIdentity()
     glTranslatef(0,0.0,-7.0)
 
-    glRotatef(float(ax) ,1.0,0.0,0.0)
-    glRotatef(-1*float(ay) ,0.0,0.0,1.0)
+    glRotatef(float(ay) ,1.0,0.0,0.0)
+    glRotatef(-1*float(ax) ,0.0,0.0,1.0)
 
     glBegin(GL_QUADS)	
 

@@ -34,6 +34,7 @@ void setup()
   int error;
   uint8_t c;
   BTSerial.begin(38400);
+  Serial.begin(38400);
 
   // Initialize the 'Wire' class for the I2C-bus.
   Wire.begin();
@@ -64,34 +65,39 @@ void loop()
   read_sensor_data();
 
   // angles based on accelerometer
-  ax = atan2(accX, sqrt( pow(accY, 2) + pow(accZ, 2))) * 180 / M_PI;
-  ay = atan2(accY, sqrt( pow(accX, 2) + pow(accZ, 2))) * 180 / M_PI;
+  ay = atan2(accX, sqrt( pow(accY, 2) + pow(accZ, 2))) * 180 / M_PI;
+  ax = atan2(accY, sqrt( pow(accX, 2) + pow(accZ, 2))) * 180 / M_PI;
 
   // angles based on gyro (deg/s)
 
   gx = gx + gyrX / FREQ;
-  gy = gy + gyrY / FREQ;
+  gy = gy - gyrY / FREQ;
   gz = gz + gyrZ / FREQ;
 
-/*
-  BTSerial.print(gyrX);
-  BTSerial.print(", ");
-  BTSerial.print(gyrY);
-  BTSerial.print(", ");
-  BTSerial.print(gyrZ);
-  BTSerial.print(" || ");
 
-  BTSerial.print(gx);
-  BTSerial.print(", ");
-  BTSerial.print(gy);
-  BTSerial.print(", ");
-  BTSerial.print(gz);
-  BTSerial.write("     \r");
-*/
+#if 1
+  gx = gx * 0.98 + ax * 0.02;
+  gy = gy * 0.98 + ay * 0.02;
+  //gz = gz * 0.98 + az * 0.02;
+#endif
 
-  BTSerial.print(ax, 2);
+#if 0
+  Serial.print(ax, 2);
+  Serial.print(", ");
+  Serial.print(ay, 2);
+  Serial.print(" || ");
+  Serial.print(gx, 2);
+  Serial.print(", ");
+  Serial.print(gy, 2);
+  Serial.print(", ");
+  Serial.print(gz, 2);
+  Serial.write("     \r");
+#endif
+
+
+  BTSerial.print(gx, 2);
   BTSerial.print(", ");
-  BTSerial.println(ay, 2);
+  BTSerial.println(gy, 2);
 
   delay((1/FREQ) * 1000);
 }
