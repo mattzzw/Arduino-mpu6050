@@ -21,16 +21,16 @@
 SoftwareSerial BTSerial(2, 3); // RX | TX
 
 // global angle, gyro derived
- double gx = 0, gy = 0, gz = 0;
-
-
+double gx = 0, gy = 0, gz = 0;
+double gyrX = 0, gyrY = 0, gyrZ = 0;
+double gyrXoffs = -574.00, gyrYoffs = 39.00, gyrZoffs = 125.00;
+int16_t accX = 0, accY = 0, accZ = 0;
 
 void setup()
 {      
   int error;
   uint8_t c;
   BTSerial.begin(38400);
-
 
   // Initialize the 'Wire' class for the I2C-bus.
   Wire.begin();
@@ -47,6 +47,8 @@ void setup()
   // reg_value = 1khz/FREQ - 1
   // so write 99 to smprt_div (0x19)
   MPU6050_write_reg (0x19, 1000/FREQ - 1);
+
+  //calibrate();
 }
 
 
@@ -55,39 +57,18 @@ void loop()
   int error;
   double dT;
   double ax, ay, az;
- 
-  uint8_t i2cData[14];
-  int16_t accX, accY, accZ;
-  double gyrX, gyrY, gyrZ;
 
-  // read imu data
-  error = MPU6050_read(0x3b, i2cData, 14);
-  
-  accX = ((i2cData[0] << 8) | i2cData[1]);
-  accY = ((i2cData[2] << 8) | i2cData[3]);
-  accZ = ((i2cData[4] << 8) | i2cData[5]);
+  read_sensor_data();
 
-
-  gyrX = ((i2cData[8] << 8) | i2cData[9]) / 131.0;
-  gyrY = ((i2cData[10] << 8) | i2cData[11]) / 131.0;
-  gyrZ = ((i2cData[12] << 8) | i2cData[13]) / 131.0;
-
-
-
-  if(error!=0)
-    BTSerial.println("ERROR!");
-
-// angles based on accelerometer
+  // angles based on accelerometer
   ax = atan2(accX, sqrt( pow(accY, 2) + pow(accZ, 2))) * 180 / M_PI;
   ay = atan2(accY, sqrt( pow(accX, 2) + pow(accZ, 2))) * 180 / M_PI;
 
-// angles based on gyro (deg/s)
-  
+  // angles based on gyro (deg/s)
+
   gx = gx + gyrX / FREQ;
   gy = gy + gyrY / FREQ;
   gz = gz + gyrZ / FREQ;
-
-
 
   BTSerial.print(gyrX);
   BTSerial.print(", ");
@@ -95,7 +76,7 @@ void loop()
   BTSerial.print(", ");
   BTSerial.print(gyrZ);
   BTSerial.print(" || ");
-  
+
   BTSerial.print(gx);
   BTSerial.print(", ");
   BTSerial.print(gy);
@@ -107,10 +88,63 @@ void loop()
   BTSerial.print(ax, 2);
   BTSerial.print(", ");
   BTSerial.println(ay, 2);
-*/
+  */
   delay((1/FREQ) * 1000);
 }
 
+
+void calibrate(){
+
+  int x;
+  long xSum = 0, ySum = 0, zSum = 0;
+  uint8_t i2cData[6]; 
+  int num = 1000;
+  uint8_t error;
+
+  for (x = 0; x < num; x++){
+
+    error = MPU6050_read(0x43, i2cData, 6);
+    if(error!=0)
+      BTSerial.println("ERROR!");
+
+    gyrX = ((i2cData[0] << 8) | i2cData[1]);
+    gyrY = ((i2cData[2] << 8) | i2cData[3]);
+    gyrZ = ((i2cData[4] << 8) | i2cData[5]);
+
+    xSum += gyrX;
+    ySum += gyrY;
+    zSum += gyrZ;
+  }
+  gyrXoffs = xSum / num;
+  gyrYoffs = ySum / num;
+  gyrZoffs = zSum / num;
+
+  BTSerial.println("Calibration result:");
+  BTSerial.print(gyrXoffs);
+  BTSerial.print(", ");
+  BTSerial.print(gyrYoffs);
+  BTSerial.print(", ");
+  BTSerial.println(gyrZoffs);
+
+} 
+
+void read_sensor_data(){
+ uint8_t i2cData[14];
+ uint8_t error;
+  // read imu data
+  error = MPU6050_read(0x3b, i2cData, 14);
+
+  accX = ((i2cData[0] << 8) | i2cData[1]);
+  accY = ((i2cData[2] << 8) | i2cData[3]);
+  accZ = ((i2cData[4] << 8) | i2cData[5]);
+
+  gyrX = (((i2cData[8] << 8) | i2cData[9]) - gyrXoffs) / 131.0;
+  gyrY = (((i2cData[10] << 8) | i2cData[11]) - gyrYoffs) / 131.0;
+  gyrZ = (((i2cData[12] << 8) | i2cData[13]) - gyrZoffs) / 131.0;
+
+  if(error!=0)
+  BTSerial.println("ERROR!");
+}
 
 // --------------------------------------------------------
 // MPU6050_read
@@ -132,11 +166,11 @@ int MPU6050_read(int start, uint8_t *buffer, int size)
   Wire.beginTransmission(MPU6050_I2C_ADDRESS);
   n = Wire.write(start);
   if (n != 1)
-    return (-10);
+  return (-10);
 
   n = Wire.endTransmission(false);    // hold the I2C-bus
   if (n != 0)
-    return (n);
+  return (n);
 
   // Third parameter is true: relase I2C-bus after data is read.
   Wire.requestFrom(MPU6050_I2C_ADDRESS, size, true);
@@ -146,7 +180,7 @@ int MPU6050_read(int start, uint8_t *buffer, int size)
     buffer[i++]=Wire.read();
   }
   if ( i != size)
-    return (-11);
+  return (-11);
 
   return (0);  // return : no error
 }
@@ -178,15 +212,15 @@ int MPU6050_write(int start, const uint8_t *pData, int size)
   Wire.beginTransmission(MPU6050_I2C_ADDRESS);
   n = Wire.write(start);        // write the start address
   if (n != 1)
-    return (-20);
+  return (-20);
 
   n = Wire.write(pData, size);  // write data bytes
   if (n != size)
-    return (-21);
+  return (-21);
 
   error = Wire.endTransmission(true); // release the I2C-bus
   if (error != 0)
-    return (error);
+  return (error);
 
   return (0);         // return : no error
 }
