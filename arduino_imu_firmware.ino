@@ -76,8 +76,8 @@ void loop()
 
 
 #if 1
-  gx = gx * 0.98 + ax * 0.02;
-  gy = gy * 0.98 + ay * 0.02;
+  gx = gx * 0.80 + ax * 0.20;
+  gy = gy * 0.80 + ay * 0.20;
   //gz = gz * 0.98 + az * 0.02;
 #endif
 

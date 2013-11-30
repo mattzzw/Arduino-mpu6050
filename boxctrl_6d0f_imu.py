@@ -11,6 +11,7 @@ import serial
 ser = serial.Serial('/dev/tty.ArduinoBluetooth-DevB', 38400, timeout=1)
 ser.flushInput()
 ax = ay = az = 0.0
+yaw_mode = False
 
 def resize((width, height)):
     if height==0:
@@ -39,7 +40,11 @@ def draw():
 
     glRotatef(float(ay) ,1.0,0.0,0.0)
     glRotatef(-1*float(ax) ,0.0,0.0,1.0)
-    glRotatef(float(az), 0.0, 1.0, 0.0)
+    if yaw_mode:
+        glRotatef(float(az), 0.0, 1.0, 0.0)
+    else:
+        glRotatef(0.0, 0.0, 1.0, 0.0)
+
 
     glBegin(GL_QUADS)	
 
@@ -98,6 +103,7 @@ def read_data():
 
 
 def main():
+    global yaw_mode
 
     video_flags = OPENGL|DOUBLEBUF
     
@@ -113,6 +119,8 @@ def main():
         event = pygame.event.poll()
         if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
             break       
+        if event.type == KEYDOWN and event.key == K_z:
+            yaw_mode = not yaw_mode
         read_data()
         draw()
         pygame.display.flip()
