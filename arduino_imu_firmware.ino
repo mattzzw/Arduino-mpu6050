@@ -23,8 +23,11 @@ SoftwareSerial BTSerial(2, 3); // RX | TX
 // global angle, gyro derived
 double gx = 0, gy = 0, gz = 0;
 double gyrX = 0, gyrY = 0, gyrZ = 0;
-double gyrXoffs = -574.00, gyrYoffs = 39.00, gyrZoffs = 125.00;
 int16_t accX = 0, accY = 0, accZ = 0;
+
+// Calibration result:
+// -574.00, 39.00, -125.00
+double gyrXoffs = -574.00, gyrYoffs = 39.00, gyrZoffs = -125.00;
 
 void setup()
 {      
@@ -70,6 +73,7 @@ void loop()
   gy = gy + gyrY / FREQ;
   gz = gz + gyrZ / FREQ;
 
+/*
   BTSerial.print(gyrX);
   BTSerial.print(", ");
   BTSerial.print(gyrY);
@@ -83,12 +87,12 @@ void loop()
   BTSerial.print(", ");
   BTSerial.print(gz);
   BTSerial.write("     \r");
+*/
 
-/*
   BTSerial.print(ax, 2);
   BTSerial.print(", ");
   BTSerial.println(ay, 2);
-  */
+
   delay((1/FREQ) * 1000);
 }
 
