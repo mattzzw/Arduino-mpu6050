@@ -32,7 +32,6 @@ def init():
 
 def draw():
     global rquad
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
     
     glLoadIdentity()
@@ -111,8 +110,7 @@ def main():
     while 1:
         event = pygame.event.poll()
         if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-            break
-        
+            break       
         read_data()
         draw()
         pygame.display.flip()
