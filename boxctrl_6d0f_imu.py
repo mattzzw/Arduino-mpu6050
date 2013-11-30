@@ -39,6 +39,7 @@ def draw():
 
     glRotatef(float(ay) ,1.0,0.0,0.0)
     glRotatef(-1*float(ax) ,0.0,0.0,1.0)
+    glRotatef(float(az), 0.0, 1.0, 0.0)
 
     glBegin(GL_QUADS)	
 
@@ -83,14 +84,15 @@ def draw():
     #rquad = rquad - 0.5                
     
 def read_data():
-    global ax, ay
-    ax = ay = 0.0
+    global ax, ay, az
+    ax = ay = az = 0.0
     line = ser.readline() 
     print line
     angles = line.split(", ")
-    if len(angles) == 2:
+    if len(angles) == 3:
         ax = angles[0]
-        ay = angles[1] 
+        ay = angles[1]
+        az = angles[2] 
 
 
 

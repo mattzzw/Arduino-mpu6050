@@ -97,8 +97,9 @@ void loop()
 
   BTSerial.print(gx, 2);
   BTSerial.print(", ");
-  BTSerial.println(gy, 2);
-
+  BTSerial.print(gy, 2);
+  BTSerial.print(", ");
+  BTSerial.println(gz, 2);
   delay((1/FREQ) * 1000);
 }
 
