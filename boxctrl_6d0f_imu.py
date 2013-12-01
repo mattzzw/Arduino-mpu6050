@@ -9,7 +9,7 @@ from pygame.locals import *
 import serial
 
 ser = serial.Serial('/dev/tty.ArduinoBluetooth-DevB', 38400, timeout=1)
-ser.flushInput()
+
 ax = ay = az = 0.0
 yaw_mode = False
 
@@ -84,23 +84,24 @@ def draw():
     glVertex3f( 1.0,-0.2, 1.0)		
     glVertex3f( 1.0,-0.2,-1.0)		
     glEnd()	
-     
-    #print "x: %f y: %f" %(ax, ay)
-    #rquad = rquad - 0.5                
-    
+         
 def read_data():
     global ax, ay, az
     ax = ay = az = 0.0
-    line = ser.readline() 
-    print line
-    angles = line.split(", ")
-    if len(angles) == 3:
-        ax = angles[0]
-        ay = angles[1]
-        az = angles[2] 
+    done = 0
 
+    #request data by sending any character
+    ser.write(".")
 
-
+    while not done:
+        line = ser.readline() 
+        angles = line.split(", ")
+        if len(angles) == 3:    
+            ax = angles[0]
+            ay = angles[1]
+            az = angles[2]
+            print line
+            done = 1 
 
 def main():
     global yaw_mode
@@ -108,11 +109,10 @@ def main():
     video_flags = OPENGL|DOUBLEBUF
     
     pygame.init()
-    pygame.display.set_mode((640,480), video_flags)
+    screen = pygame.display.set_mode((640,480), video_flags)
 
     resize((640,480))
     init()
-
     frames = 0
     ticks = pygame.time.get_ticks()
     while 1:

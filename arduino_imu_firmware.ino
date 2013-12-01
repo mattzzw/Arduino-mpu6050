@@ -36,6 +36,8 @@ void setup()
   BTSerial.begin(38400);
   Serial.begin(38400);
 
+  pinMode(13, OUTPUT); // debug led
+
   // Initialize the 'Wire' class for the I2C-bus.
   Wire.begin();
 
@@ -95,11 +97,19 @@ void loop()
 #endif
 
 
-  BTSerial.print(gx, 2);
-  BTSerial.print(", ");
-  BTSerial.print(gy, 2);
-  BTSerial.print(", ");
-  BTSerial.println(gz, 2);
+  if(BTSerial.available())
+  {
+    char dummy;
+    dummy = BTSerial.read();
+    digitalWrite(13, HIGH);
+    BTSerial.print(gx, 2);
+    BTSerial.print(", ");
+    BTSerial.print(gy, 2);
+    BTSerial.print(", ");
+    BTSerial.println(gz, 2);
+    digitalWrite(13, LOW);  
+  }
+
   delay((1/FREQ) * 1000);
 }
 
