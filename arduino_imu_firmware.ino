@@ -84,31 +84,13 @@ void loop()
   ax = atan2(accY, sqrt( pow(accX, 2) + pow(accZ, 2))) * 180 / M_PI;
 
   // angles based on gyro (deg/s)
-
   gx = gx + gyrX / FREQ;
   gy = gy - gyrY / FREQ;
   gz = gz + gyrZ / FREQ;
 
-
   // complementary filter
   gx = gx * 0.96 + ax * 0.04;
   gy = gy * 0.96 + ay * 0.04;
-
-
-
-#if 0
-  Serial.print(ax, 2);
-  Serial.print(", ");
-  Serial.print(ay, 2);
-  Serial.print(" || ");
-  Serial.print(gx, 2);
-  Serial.print(", ");
-  Serial.print(gy, 2);
-  Serial.print(", ");
-  Serial.print(gz, 2);
-  Serial.write("     \r");
-#endif
-
 
   // check if there is some kind of request 
   // from the other side...
@@ -162,21 +144,13 @@ void calibrate(){
   gyrYoffs = ySum / num;
   gyrZoffs = zSum / num;
 
-#if 0
-  BTSerial.println("Calibration result:");
-  BTSerial.print(gyrXoffs);
-  BTSerial.print(", ");
-  BTSerial.print(gyrYoffs);
-  BTSerial.print(", ");
-  BTSerial.println(gyrZoffs);
- 
-  BTSerial.print(accXoffs);
-  BTSerial.print(", ");
-  BTSerial.print(accYoffs);
-  BTSerial.print(", ");
-  BTSerial.println(accZoffs);
-  #endif
-
+  Serial.println("Calibration result:");
+  Serial.print(gyrXoffs);
+  Serial.print(", ");
+  Serial.print(gyrYoffs);
+  Serial.print(", ");
+  Serial.println(gyrZoffs);
+  
 } 
 
 void read_sensor_data(){
