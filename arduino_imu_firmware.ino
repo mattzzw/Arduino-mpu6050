@@ -15,24 +15,25 @@
 
 #define MPU6050_I2C_ADDRESS 0x68
 
-#define FREQ  50.0 // sample freq in Hz
+#define FREQ  20.0 // sample freq in Hz
 
 // Bluetooth transmitter 
 SoftwareSerial BTSerial(2, 3); // RX | TX
 
 // global angle, gyro derived
+double gSensitivity = 65.5; // for 500 deg/s, check data sheet
 double gx = 0, gy = 0, gz = 0;
 double gyrX = 0, gyrY = 0, gyrZ = 0;
 int16_t accX = 0, accY = 0, accZ = 0;
 
-// Calibration result:
-// -574.00, 39.00, -125.00
-double gyrXoffs = -574.00, gyrYoffs = 39.00, gyrZoffs = -125.00;
+double gyrXoffs = -281.00, gyrYoffs = 18.00, gyrZoffs = -83.00;
 
 void setup()
 {      
   int error;
   uint8_t c;
+  uint8_t sample_div;
+
   BTSerial.begin(38400);
   Serial.begin(38400);
 
@@ -41,28 +42,40 @@ void setup()
   // Initialize the 'Wire' class for the I2C-bus.
   Wire.begin();
 
-  // wake up
-  MPU6050_write_reg (0x6b, 0);
+  // PWR_MGMT_1:
+  // wake up 
+  MPU6050_write_reg (0x6b, 0x00);
 
+  // CONFIG:
   // Low pass filter samples, 1khz sample rate
-  MPU6050_write_reg (0x1a, 1);
+  MPU6050_write_reg (0x1a, 0x01);
 
+  // GYRO_CONFIG:
+  // 500 deg/s, FS_SEL=1
+  // This means 65.5 LSBs/deg/s
+  MPU6050_write_reg(0x1b, 0x08);
+
+  // CONFIG:
   // set sample rate
-  // sample rate FREQ = 1khz / (div + 1)
+  // sample rate FREQ = Gyro sample rate / (sample_div + 1)
   // 1kHz / (div + 1) = FREQ  
   // reg_value = 1khz/FREQ - 1
-  // so write 99 to smprt_div (0x19)
-  MPU6050_write_reg (0x19, 1000/FREQ - 1);
+  sample_div = 1000 / FREQ - 1;
+  MPU6050_write_reg (0x19, sample_div);
 
-  //calibrate();
+  digitalWrite(13, HIGH);
+  calibrate();
+  digitalWrite(13, LOW);
 }
-
 
 void loop()
 {
   int error;
   double dT;
   double ax, ay, az;
+  unsigned long start_time, end_time;
+
+  start_time = millis();
 
   read_sensor_data();
 
@@ -77,11 +90,11 @@ void loop()
   gz = gz + gyrZ / FREQ;
 
 
-#if 1
-  gx = gx * 0.80 + ax * 0.20;
-  gy = gy * 0.80 + ay * 0.20;
-  //gz = gz * 0.98 + az * 0.02;
-#endif
+  // complementary filter
+  gx = gx * 0.96 + ax * 0.04;
+  gy = gy * 0.96 + ay * 0.04;
+
+
 
 #if 0
   Serial.print(ax, 2);
@@ -97,20 +110,33 @@ void loop()
 #endif
 
 
+  // check if there is some kind of request 
+  // from the other side...
   if(BTSerial.available())
   {
-    char dummy;
-    dummy = BTSerial.read();
-    digitalWrite(13, HIGH);
-    BTSerial.print(gx, 2);
-    BTSerial.print(", ");
-    BTSerial.print(gy, 2);
-    BTSerial.print(", ");
-    BTSerial.println(gz, 2);
-    digitalWrite(13, LOW);  
+    char rx_char;
+    // dummy read
+    rx_char = BTSerial.read();
+    // we have to send data, as requested
+    if (rx_char == '.'){
+      digitalWrite(13, HIGH);
+      BTSerial.print(gx, 2);
+      BTSerial.print(", ");
+      BTSerial.print(gy, 2);
+      BTSerial.print(", ");
+      BTSerial.println(gz, 2);
+      digitalWrite(13, LOW);
+    }
+    // reset z gyro axis
+    if (rx_char == 'z'){
+      gz = 0;
+    }  
   }
 
-  delay((1/FREQ) * 1000);
+  end_time = millis();
+
+  // remaining time to complete sample time
+  delay(((1/FREQ) * 1000) - (end_time - start_time));
 }
 
 
@@ -119,33 +145,37 @@ void calibrate(){
   int x;
   long xSum = 0, ySum = 0, zSum = 0;
   uint8_t i2cData[6]; 
-  int num = 1000;
+  int num = 500;
   uint8_t error;
 
   for (x = 0; x < num; x++){
 
     error = MPU6050_read(0x43, i2cData, 6);
     if(error!=0)
-      BTSerial.println("ERROR!");
+      return;
 
-    gyrX = ((i2cData[0] << 8) | i2cData[1]);
-    gyrY = ((i2cData[2] << 8) | i2cData[3]);
-    gyrZ = ((i2cData[4] << 8) | i2cData[5]);
-
-    xSum += gyrX;
-    ySum += gyrY;
-    zSum += gyrZ;
+    xSum += ((i2cData[0] << 8) | i2cData[1]);
+    ySum += ((i2cData[2] << 8) | i2cData[3]);
+    zSum += ((i2cData[4] << 8) | i2cData[5]);
   }
   gyrXoffs = xSum / num;
   gyrYoffs = ySum / num;
   gyrZoffs = zSum / num;
 
+#if 0
   BTSerial.println("Calibration result:");
   BTSerial.print(gyrXoffs);
   BTSerial.print(", ");
   BTSerial.print(gyrYoffs);
   BTSerial.print(", ");
   BTSerial.println(gyrZoffs);
+ 
+  BTSerial.print(accXoffs);
+  BTSerial.print(", ");
+  BTSerial.print(accYoffs);
+  BTSerial.print(", ");
+  BTSerial.println(accZoffs);
+  #endif
 
 } 
 
@@ -154,32 +184,21 @@ void read_sensor_data(){
  uint8_t error;
   // read imu data
   error = MPU6050_read(0x3b, i2cData, 14);
+  if(error!=0)
+    return;
 
+  // assemble 16 bit sensor data
   accX = ((i2cData[0] << 8) | i2cData[1]);
   accY = ((i2cData[2] << 8) | i2cData[3]);
   accZ = ((i2cData[4] << 8) | i2cData[5]);
 
-  gyrX = (((i2cData[8] << 8) | i2cData[9]) - gyrXoffs) / 131.0;
-  gyrY = (((i2cData[10] << 8) | i2cData[11]) - gyrYoffs) / 131.0;
-  gyrZ = (((i2cData[12] << 8) | i2cData[13]) - gyrZoffs) / 131.0;
-
-  if(error!=0)
-  BTSerial.println("ERROR!");
+  gyrX = (((i2cData[8] << 8) | i2cData[9]) - gyrXoffs) / gSensitivity;
+  gyrY = (((i2cData[10] << 8) | i2cData[11]) - gyrYoffs) / gSensitivity;
+  gyrZ = (((i2cData[12] << 8) | i2cData[13]) - gyrZoffs) / gSensitivity;
+ 
 }
 
-// --------------------------------------------------------
-// MPU6050_read
-//
-// This is a common function to read multiple bytes 
-// from an I2C device.
-//
-// It uses the boolean parameter for Wire.endTransMission()
-// to be able to hold or release the I2C-bus. 
-// This is implemented in Arduino 1.0.1.
-//
-// Only this function is used to read. 
-// There is no function for a single byte.
-//
+
 int MPU6050_read(int start, uint8_t *buffer, int size)
 {
   int i, n, error;
@@ -207,25 +226,6 @@ int MPU6050_read(int start, uint8_t *buffer, int size)
 }
 
 
-// --------------------------------------------------------
-// MPU6050_write
-//
-// This is a common function to write multiple bytes to an I2C device.
-//
-// If only a single register is written,
-// use the function MPU_6050_write_reg().
-//
-// Parameters:
-//   start : Start address, use a define for the register
-//   pData : A pointer to the data to write.
-//   size  : The number of bytes to write.
-//
-// If only a single register is written, a pointer
-// to the data has to be used, and the size is
-// a single byte:
-//   int data = 0;        // the data to write
-//   MPU6050_write (MPU6050_PWR_MGMT_1, &c, 1);
-//
 int MPU6050_write(int start, const uint8_t *pData, int size)
 {
   int n, error;
@@ -246,14 +246,7 @@ int MPU6050_write(int start, const uint8_t *pData, int size)
   return (0);         // return : no error
 }
 
-// --------------------------------------------------------
-// MPU6050_write_reg
-//
-// An extra function to write a single register.
-// It is just a wrapper around the MPU_6050_write()
-// function, and it is only a convenient function
-// to make it easier to write a single register.
-//
+
 int MPU6050_write_reg(int reg, uint8_t data)
 {
   int error;

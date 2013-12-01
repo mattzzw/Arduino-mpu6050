@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# pygame + PyOpenGL version of Nehe's OpenGL lesson05
-# Paul Furber 2001 - m@verick.co.za
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -31,6 +29,13 @@ def init():
     glDepthFunc(GL_LEQUAL)
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 
+def drawText(position, textString):     
+    font = pygame.font.SysFont ("Courier", 18)
+    textSurface = font.render(textString, True, (255,255,255,255), (0,0,0,255))     
+    textData = pygame.image.tostring(textSurface, "RGBA", True)     
+    glRasterPos3d(*position)     
+    glDrawPixels(textSurface.get_width(), textSurface.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, textData)
+
 def draw():
     global rquad
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
@@ -38,16 +43,26 @@ def draw():
     glLoadIdentity()
     glTranslatef(0,0.0,-7.0)
 
-    glRotatef(float(ay) ,1.0,0.0,0.0)
-    glRotatef(-1*float(ax) ,0.0,0.0,1.0)
+    osd_text = "pitch: " + str("{0:.2f}".format(ay)) + ", roll: " + str("{0:.2f}".format(ax))
+
     if yaw_mode:
-        glRotatef(float(az), 0.0, 1.0, 0.0)
+        osd_line = osd_text + ", yaw: " + str("{0:.2f}".format(az))
+    else:
+        osd_line = osd_text
+
+    drawText((-2,-2, 2), osd_line)
+
+    # the way I'm holding the IMU board, X and Y axis are switched 
+    # with respect to the OpenGL coordinate system
+    glRotatef(ay ,1.0,0.0,0.0)        # Pitch, rotate around x-axis
+    glRotatef(-1*ax ,0.0,0.0,1.0)     # Roll,  rotate around z-axis
+
+    if yaw_mode:                             # experimental
+        glRotatef(az, 0.0, 1.0, 0.0)  # Yaw,   rotate around y-axis
     else:
         glRotatef(0.0, 0.0, 1.0, 0.0)
 
-
     glBegin(GL_QUADS)	
-
     glColor3f(0.0,1.0,0.0)
     glVertex3f( 1.0, 0.2,-1.0)
     glVertex3f(-1.0, 0.2,-1.0)		
@@ -88,20 +103,18 @@ def draw():
 def read_data():
     global ax, ay, az
     ax = ay = az = 0.0
-    done = 0
+    line_done = 0
 
-    #request data by sending any character
+    # request data by sending a dot
     ser.write(".")
-
-    while not done:
-        line = ser.readline() 
-        angles = line.split(", ")
-        if len(angles) == 3:    
-            ax = angles[0]
-            ay = angles[1]
-            az = angles[2]
-            print line
-            done = 1 
+    #while not line_done:
+    line = ser.readline() 
+    angles = line.split(", ")
+    if len(angles) == 3:    
+        ax = float(angles[0])
+        ay = float(angles[1])
+        az = float(angles[2])
+        line_done = 1 
 
 def main():
     global yaw_mode
@@ -110,7 +123,7 @@ def main():
     
     pygame.init()
     screen = pygame.display.set_mode((640,480), video_flags)
-
+    pygame.display.set_caption("Press Esc to quit, z toggles yaw mode")
     resize((640,480))
     init()
     frames = 0
@@ -121,8 +134,10 @@ def main():
             break       
         if event.type == KEYDOWN and event.key == K_z:
             yaw_mode = not yaw_mode
+            ser.write("z")
         read_data()
         draw()
+      
         pygame.display.flip()
         frames = frames+1
 
