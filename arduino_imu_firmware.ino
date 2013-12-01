@@ -15,7 +15,7 @@
 
 #define MPU6050_I2C_ADDRESS 0x68
 
-#define FREQ  20.0 // sample freq in Hz
+#define FREQ  50.0 // sample freq in Hz
 
 // Bluetooth transmitter 
 SoftwareSerial BTSerial(2, 3); // RX | TX
@@ -89,6 +89,8 @@ void loop()
   gz = gz + gyrZ / FREQ;
 
   // complementary filter
+  // tau = DT*(A)/(1-A)
+  // = 0.48sec
   gx = gx * 0.96 + ax * 0.04;
   gy = gy * 0.96 + ay * 0.04;
 

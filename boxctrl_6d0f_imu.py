@@ -30,7 +30,7 @@ def init():
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 
 def drawText(position, textString):     
-    font = pygame.font.SysFont ("Courier", 18)
+    font = pygame.font.SysFont ("Courier", 18, True)
     textSurface = font.render(textString, True, (255,255,255,255), (0,0,0,255))     
     textData = pygame.image.tostring(textSurface, "RGBA", True)     
     glRasterPos3d(*position)     
