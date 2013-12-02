@@ -54,13 +54,12 @@ def draw():
 
     # the way I'm holding the IMU board, X and Y axis are switched 
     # with respect to the OpenGL coordinate system
-    glRotatef(ay ,1.0,0.0,0.0)        # Pitch, rotate around x-axis
-    glRotatef(-1*ax ,0.0,0.0,1.0)     # Roll,  rotate around z-axis
-
     if yaw_mode:                             # experimental
         glRotatef(az, 0.0, 1.0, 0.0)  # Yaw,   rotate around y-axis
     else:
         glRotatef(0.0, 0.0, 1.0, 0.0)
+    glRotatef(ay ,1.0,0.0,0.0)        # Pitch, rotate around x-axis
+    glRotatef(-1*ax ,0.0,0.0,1.0)     # Roll,  rotate around z-axis
 
     glBegin(GL_QUADS)	
     glColor3f(0.0,1.0,0.0)

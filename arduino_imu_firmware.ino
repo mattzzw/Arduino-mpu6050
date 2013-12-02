@@ -15,7 +15,7 @@
 
 #define MPU6050_I2C_ADDRESS 0x68
 
-#define FREQ  50.0 // sample freq in Hz
+#define FREQ  30.0 // sample freq in Hz
 
 // Bluetooth transmitter 
 SoftwareSerial BTSerial(2, 3); // RX | TX
@@ -121,6 +121,7 @@ void loop()
 
   // remaining time to complete sample time
   delay(((1/FREQ) * 1000) - (end_time - start_time));
+  //Serial.println(end_time - start_time);
 }
 
 
