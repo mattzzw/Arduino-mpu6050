@@ -6,7 +6,7 @@ import pygame
 from pygame.locals import *
 import serial
 
-ser = serial.Serial('/dev/tty.ArduinoBluetooth-DevB', 38400, timeout=1)
+ser = serial.Serial('/dev/tty.usbserial', 38400, timeout=1)
 
 ax = ay = az = 0.0
 yaw_mode = False

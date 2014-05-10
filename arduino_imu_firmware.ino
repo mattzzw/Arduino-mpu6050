@@ -2,10 +2,10 @@
 
 // Bluetooth module connected to digital pins 2,3
 // I2C bus on A4, A5
-// Servo on pin 7
+// Servo on pin 0
 
 #include <Wire.h>
-#include <SoftwareSerial.h>
+//#include <SoftwareSerial.h>
 #include <math.h>
 #include <Servo.h>
 
@@ -13,8 +13,8 @@
 
 #define FREQ  30.0 // sample freq in Hz
 
-// Bluetooth transmitter 
-SoftwareSerial BTSerial(2, 3); // RX | TX
+// Bluetooth transmitter, used optionally
+// SoftwareSerial BTSerial(2, 3); // RX | TX
 
 Servo roll_servo;
 
@@ -32,14 +32,14 @@ void setup()
   uint8_t c;
   uint8_t sample_div;
 
-  BTSerial.begin(38400);
+  //BTSerial.begin(38400);
   Serial.begin(38400);
 
   // debug led
   pinMode(13, OUTPUT); 
 
   // servo 
-  roll_servo.attach(7, 550, 2550);
+  roll_servo.attach(9, 550, 2550);
 
   // Initialize the 'Wire' class for the I2C-bus.
   Wire.begin();
@@ -65,9 +65,12 @@ void setup()
   sample_div = 1000 / FREQ - 1;
   i2c_write_reg (MPU6050_I2C_ADDRESS, 0x19, sample_div);
 
+
+//  Serial.write("Calibrating...");
   digitalWrite(13, HIGH);
   calibrate();
   digitalWrite(13, LOW);
+//  Serial.write("done.");
 }
 
 void loop()
@@ -98,19 +101,19 @@ void loop()
 
   // check if there is some kind of request 
   // from the other side...
-  if(BTSerial.available())
+  if(Serial.available())
   {
     char rx_char;
     // dummy read
-    rx_char = BTSerial.read();
+    rx_char = Serial.read();
     // we have to send data, as requested
     if (rx_char == '.'){
       digitalWrite(13, HIGH);
-      BTSerial.print(gx, 2);
-      BTSerial.print(", ");
-      BTSerial.print(gy, 2);
-      BTSerial.print(", ");
-      BTSerial.println(gz, 2);
+      Serial.print(gx, 2);
+      Serial.print(", ");
+      Serial.print(gy, 2);
+      Serial.print(", ");
+      Serial.println(gz, 2);
       digitalWrite(13, LOW);
     }
     // reset z gyro axis
@@ -151,12 +154,12 @@ void calibrate(){
   gyrYoffs = ySum / num;
   gyrZoffs = zSum / num;
 
-  Serial.println("Calibration result:");
-  Serial.print(gyrXoffs);
-  Serial.print(", ");
-  Serial.print(gyrYoffs);
-  Serial.print(", ");
-  Serial.println(gyrZoffs);
+//  Serial.println("Calibration result:");
+//  Serial.print(gyrXoffs);
+//  Serial.print(", ");
+//  Serial.print(gyrYoffs);
+//  Serial.print(", ");
+//  Serial.println(gyrZoffs);
   
 } 
 
