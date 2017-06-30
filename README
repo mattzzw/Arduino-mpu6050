@@ -2,4 +2,8 @@ Playing around with a 6DOF IMU (MPU-6050), Arduino, Python and OpenGL
 
 The Arduino Uno is sending pitch and roll data via bluetooth. A python script is receiving the data and displaying a little cube accordingly. The IMU data consists of gyro and accelerometer data, processed by a complementary filter.
 
+## Prerequisites
+1. **pyopengl**
+2. **pygame**
+
 For more information please visit http://mattzz.no-ip.org/wiki/Projects/PlayingWithInertialMeasurementUnits
