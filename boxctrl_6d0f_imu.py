@@ -131,6 +131,7 @@ def main():
     while 1:
         event = pygame.event.poll()
         if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+            pygame.quit()  #* quit pygame properly
             break       
         if event.type == KEYDOWN and event.key == K_z:
             yaw_mode = not yaw_mode
