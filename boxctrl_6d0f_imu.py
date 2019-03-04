@@ -6,12 +6,13 @@ import pygame
 from pygame.locals import *
 import serial
 
-ser = serial.Serial('/dev/tty.usbserial', 38400, timeout=1)
+#ser = serial.Serial('/dev/tty.usbserial', 38400, timeout=1)
+ser = serial.Serial('COM3', 38400, timeout=1)
 
 ax = ay = az = 0.0
 yaw_mode = False
 
-def resize((width, height)):
+def resize(width, height):
     if height==0:
         height=1
     glViewport(0, 0, width, height)
@@ -105,10 +106,10 @@ def read_data():
     line_done = 0
 
     # request data by sending a dot
-    ser.write(".")
+    ser.write(b".") #* encode string to bytes
     #while not line_done:
     line = ser.readline() 
-    angles = line.split(", ")
+    angles = line.split(b", ")
     if len(angles) == 3:    
         ax = float(angles[0])
         ay = float(angles[1])
@@ -123,7 +124,7 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((640,480), video_flags)
     pygame.display.set_caption("Press Esc to quit, z toggles yaw mode")
-    resize((640,480))
+    resize(640,480)
     init()
     frames = 0
     ticks = pygame.time.get_ticks()
@@ -133,14 +134,14 @@ def main():
             break       
         if event.type == KEYDOWN and event.key == K_z:
             yaw_mode = not yaw_mode
-            ser.write("z")
+            ser.write(b"z")
         read_data()
         draw()
       
         pygame.display.flip()
         frames = frames+1
 
-    print "fps:  %d" % ((frames*1000)/(pygame.time.get_ticks()-ticks))
+    print ("fps:  %d" % ((frames*1000)/(pygame.time.get_ticks()-ticks)))
     ser.close()
 
 if __name__ == '__main__': main()
